@@ -1,14 +1,14 @@
 <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_1294_2139)">
-<mask id="mask0_1294_2139" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="24" y="0" width="24" height="48">
+<mask id="mask0_1294_2139"  maskUnits="userSpaceOnUse" x="24" y="0" width="24" height="48">
 <rect x="24" width="24" height="48" fill="#312E2B"/>
 </mask>
 <g mask="url(#mask0_1294_2139)">
 <rect x="4.57764e-05" width="48" height="48" rx="4.8" fill="#312E2B"/>
 <rect x="1.00005" y="1" width="46" height="46" rx="3.8" stroke="white" stroke-opacity="0.1" stroke-width="2"/>
 </g>
-<mask id="mask1_1294_2139" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="48">
-<rect width="24" height="48" fill="#312E2B"/>
+<mask id="mask1_1294_2139"  maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="48">
+<rect width="24" height="48" fill="white"/>
 </mask>
 <g mask="url(#mask1_1294_2139)">
 <rect width="48" height="48" rx="4.8" fill="#E7E6E5"/>

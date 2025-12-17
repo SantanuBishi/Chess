@@ -70,6 +70,7 @@ export default function HomePage() {
             subtext="Challenge any level"
             icon={require('../../assets/playABot.png')}
             featureIcon={require('../../assets/Bot.png')}
+            onPress={()=>navigation.navigate('PlayBotPage1')}
           />
           <CTAButton
             label="New Puzzle"
