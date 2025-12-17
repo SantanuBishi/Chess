@@ -18,9 +18,9 @@ export default function PlayBotPage1() {
     Takebacks: true,
     Analysis: false,
     Threats: false,
-    BotChat: true,
+    BotChat: false,
     Timer: true,
-    Arrow: true,
+    Arrow: false,
     MoveHighlights: true,
     Dots: true,
   });
@@ -38,9 +38,14 @@ export default function PlayBotPage1() {
   const selectedBot = allBots.find((bot) => bot.id === selectedBotId);
 
   const handlePlay = () => {
-    const botWithColor = { ...selectedBot, color: selectedColor };
-    navigation.navigate('BotMatch', {
-      bot: botWithColor,
+        const finalColor =
+        selectedColor === 'random' ? Math.random() < 0.5 ? 'white' : 'black': selectedColor;
+
+   const botWithColor = { ...selectedBot, color: finalColor };
+
+    navigation.navigate('playBotPage2', {
+      bot: selectedBot,
+      color: finalColor,
       mode: selectedGameSetting,
       config: customConfig,
       strength: engineStrength,
@@ -148,24 +153,38 @@ export default function PlayBotPage1() {
           <View style={styles.customPanel}>
             {Object.keys(customConfig).map((key) => (
               <View key={key} style={styles.toggleRow}>
-                <Text>{key}</Text>
+                <Text style={styles.toggleLabel}>{key}</Text>
                 <Switch
-                  value={customConfig[key]}
-                  onValueChange={() =>
+                    value={customConfig[key]}
+                    onValueChange={() =>
                     setCustomConfig({
-                      ...customConfig,
-                      [key]: !customConfig[key],
-                    })
-                  }
-                />
+                    ...customConfig,
+                    [key]: !customConfig[key],
+                })
+                 }
+                trackColor={{
+                false: '#3a3a3a',   // dark off
+                true: '#81b64c',    // chess green on
+                }}
+                thumbColor={customConfig[key] ? '#ffffff' : '#f4f4f4'}
+                ios_backgroundColor="#3a3a3a"
+            />
               </View>
             ))}
           </View>
         )}
 
-        <TouchableOpacity style={styles.playButton} onPress={handlePlay}>
-          <Text style={styles.playText}>Play</Text>
+        <TouchableOpacity
+        style={[
+        styles.playButton,
+        !selectedBot && styles.disabledButton, ]}
+        disabled={!selectedBot}  
+        onPress={handlePlay} >
+        <Text style={styles.playText}>
+        {selectedBot ? 'Play' : 'Select a Bot'}
+        </Text>
         </TouchableOpacity>
+
       </View>
     </View>
   );

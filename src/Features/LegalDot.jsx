@@ -1,25 +1,21 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
-export default function LegalDot({ legalMoves, squareSize }) {
-  const getSquarePosition = (square) => {
-    const file = square[0]; // 'a' to 'h'
-    const rank = parseInt(square[1]); // '1' to '8'
-    const fileIndex = file.charCodeAt(0) - 'a'.charCodeAt(0);
-    const rankIndex = 8 - rank;
-
-    return {
-      left: fileIndex * squareSize,
-      top: rankIndex * squareSize,
-    };
-  };
+export default function LegalDot({
+  legalMoves,
+  squareSize,
+  getSquarePosition, // 🔥 RECEIVE FROM ChessBoard
+}) {
+  if (!legalMoves || !legalMoves.length) return null;
 
   return (
     <>
       {legalMoves.map((moveObj) => {
         const square = moveObj.to;
-        const isCapture = moveObj.flags.includes('c') || moveObj.flags.includes('e');
-        const position = getSquarePosition(square);
+        const isCapture =
+          moveObj.flags.includes('c') || moveObj.flags.includes('e');
+
+        const position = getSquarePosition(square); // ✅ orientation-safe
 
         const style = isCapture
           ? {
@@ -36,7 +32,7 @@ export default function LegalDot({ legalMoves, squareSize }) {
               left: position.left + (squareSize - 20) / 2,
             };
 
-        return <View key={`highlight-${square}`} style={style} />;
+        return <View key={`highlight-${moveObj.from}-${moveObj.to}-${moveObj.promotion || 'none'}`} style={style} />;
       })}
     </>
   );

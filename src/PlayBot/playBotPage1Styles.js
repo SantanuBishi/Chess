@@ -91,9 +91,11 @@ const styles = StyleSheet.create({
   },
 
   botRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+},
+
 
   botCard: {
     alignItems: 'center',
@@ -103,10 +105,13 @@ const styles = StyleSheet.create({
   },
 
   selectedBotCard: {
-    borderWidth: 2,
-    borderColor: '#81b64c',
-    borderRadius: 8,
-  },
+  borderWidth: 2,
+  borderColor: '#81b64c',
+  borderRadius: 10,
+  backgroundColor: '#1f2a18',
+  transform: [{ scale: 1.05 }],
+},
+
 
   botThumb: {
     width: 64,
@@ -120,11 +125,14 @@ const styles = StyleSheet.create({
   },
 
   configPanel: {
-    padding: 16,
-    backgroundColor: '#1a1a1a54',
-    borderRadius: 12,
-    marginTop: 16,
-  },
+  padding: 16,
+  backgroundColor: '#1a1a1a',
+  borderRadius: 14,
+  marginTop: 16,
+  borderWidth: 1,
+  borderColor: '#2a2a2a',
+},
+
 
   configTitle: {
     fontWeight: 'bold',
@@ -148,14 +156,29 @@ dropdownWrapper: {
 },
 
 
-  dropdown: {
-    backgroundColor: '#2a2a2a',
-    borderColor: '#444',
-    height: 48,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    zIndex: 1000,
-  },
+dropdown: {
+  backgroundColor: '#2a2a2a',
+  borderColor: '#444',
+  height: 52,
+  borderRadius: 10,
+  paddingHorizontal: 14,
+},
+
+dropdownText: {
+  color: '#fff',
+  fontSize: 15,
+},
+
+dropdownLabel: {
+  color: '#fff',
+  fontWeight: '600',
+},
+
+dropdownItemText: {
+  color: '#fff',
+  fontSize: 14,
+},
+
 colorSelectorInline: {
   flexDirection: 'row',
   alignItems: 'center',
@@ -166,7 +189,7 @@ colorSelectorInline: {
 
 
   dropdownContainer: {
-    backgroundColor: '#2a2a2a54',
+    backgroundColor: '#2a2a2a',
     borderColor: '#444',
     maxHeight: 200,
     zIndex: 999,
@@ -178,9 +201,9 @@ colorSelectorInline: {
   },
 
   selectedColor: {
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#81b64c',
-    borderRadius: 6,
+    borderRadius: 7,
   },
 
   colorIcon: {
@@ -190,7 +213,7 @@ colorSelectorInline: {
 
   customPanel: {
     marginTop: 12,
-    color:'#fff',
+    color:'#fffffff',
   },
 
   toggleRow: {
@@ -198,6 +221,12 @@ colorSelectorInline: {
     justifyContent: 'space-between',
     marginVertical: 5,
   },
+
+  toggleLabel: {
+  color: '#ffffff',
+  fontSize: 15,
+},
+
 
   sliderBlock: {
     marginVertical: 12,
