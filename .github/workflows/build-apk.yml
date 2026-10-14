@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - playbot
+      - stockfish-integration
 
 jobs:
   build:
@@ -15,10 +15,10 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout playbot branch
+      - name: Checkout stockfish-integration branch
         uses: actions/checkout@v4
         with:
-          ref: playbot
+          ref: stockfish-integration
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
