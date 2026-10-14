@@ -7,10 +7,14 @@ const config = {
     babelTransformerPath: require.resolve('react-native-svg-transformer'),
   },
   resolver: {
-    assetExts: defaultConfig.resolver.assetExts.filter(
+    assetExts: [
+      ...defaultConfig.resolver.assetExts,
+      'wasm',   // 🔥 IMPORTANT: allow JS as asset for WebView
+      'html', // 🔥 IMPORTANT
+    ],
+    sourceExts: defaultConfig.resolver.sourceExts.filter(
       ext => ext !== 'svg'
-    ),
-    sourceExts: [...defaultConfig.resolver.sourceExts, 'svg'],
+    ).concat(['svg']),
   },
 };
 

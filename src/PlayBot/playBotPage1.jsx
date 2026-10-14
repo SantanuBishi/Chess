@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import DropDownPicker from 'react-native-dropdown-picker';
-import WhiteIcon from '../../assets/white.svg';
-import BlackIcon from '../../assets/black.svg';
-import RandomIcon from '../../assets/random.svg';
+import WhiteIcon from '../../assets/white.png';
+import BlackIcon from '../../assets/black.png';
+import RandomIcon from '../../assets/random.png';
 import styles from './playBotPage1Styles';
 import { allBots, botsByCategory } from '../PlayBot/bots/index';
 
@@ -129,23 +129,24 @@ export default function PlayBotPage1() {
 
           <View style={styles.colorSelectorInline}>
             {['white', 'random', 'black'].map((color) => (
-              <TouchableOpacity
-                key={color}
-                style={[
-                  styles.colorButton,
-                  selectedColor === color && styles.selectedColor,
-                ]}
-                onPress={() => setSelectedColor(color)}
-              >
-                {color === 'white' ? (
-                  <WhiteIcon width={40} height={40} />
-                ) : color === 'black' ? (
-                  <BlackIcon width={40} height={40} />
-                ) : (
-                  <RandomIcon width={40} height={40} />
-                )}
-              </TouchableOpacity>
-            ))}
+  <TouchableOpacity
+    key={color}
+    style={[
+      styles.colorButton,
+      selectedColor === color && styles.selectedColor,
+    ]}
+    onPress={() => setSelectedColor(color)}
+  >
+    {color === 'white' ? (
+      <Image source={WhiteIcon} style={{ width: 40, height: 40 }} />
+    ) : color === 'black' ? (
+      <Image source={BlackIcon} style={{ width: 40, height: 40 }} />
+    ) : (
+      <Image source={RandomIcon} style={{ width: 40, height: 40 }} />
+    )}
+  </TouchableOpacity>
+))}
+
           </View>
         </View>
 

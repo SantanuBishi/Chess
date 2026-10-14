@@ -79,7 +79,7 @@ android {
 
     namespace "com.chess"
     defaultConfig {
-        applicationId "com.chess"
+        applicationId "com.chessmobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 300000

@@ -1,231 +1,204 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Chess } from 'chess.js';
+import Stockfish from '../engine/stockfish';
 
 import ChessBoard from '../Chessboard/Chessboard';
-import { MoveHistoryPanel } from '../Features';
 import styles from './playBotPage2Styles';
 
-/* ================= UTIL ================= */
-const getPositionMap = (fen) => {
-  const rows = fen.split(' ')[0].split('/');
-  const files = 'abcdefgh';
-  const position = {};
+/* ---------------- INITIAL POSITION ---------------- */
 
-  rows.forEach((row, rIdx) => {
-    let cIdx = 0;
-    for (const char of row) {
-      if (isNaN(char)) {
-        position[`${files[cIdx]}${8 - rIdx}`] = char;
-        cIdx++;
-      } else {
-        cIdx += parseInt(char, 10);
-      }
-    }
-  });
+const getInitialPositionMap = () => ({
+  a8: 'r', b8: 'n', c8: 'b', d8: 'q', e8: 'k', f8: 'b', g8: 'n', h8: 'r',
+  a7: 'p', b7: 'p', c7: 'p', d7: 'p', e7: 'p', f7: 'p', g7: 'p', h7: 'p',
+  a2: 'P', b2: 'P', c2: 'P', d2: 'P', e2: 'P', f2: 'P', g2: 'P', h2: 'P',
+  a1: 'R', b1: 'N', c1: 'B', d1: 'Q', e1: 'K', f1: 'B', g1: 'N', h1: 'R',
+});
 
-  return position;
-};
+/* ---------------- MAIN COMPONENT ---------------- */
 
 export default function PlayBotPage2() {
-  const navigation = useNavigation();
   const route = useRoute();
+  const navigation = useNavigation();
 
- const {
-  bot,
-  color,
-  mode,          // 👈 ADD THIS
-  timeControl = 0,
-  config = {},
-} = route.params;
+  const {
+    strength = 8,      // from PlayBotPage1
+    color = 'white',   // from PlayBotPage1
+  } = route.params || {};
 
-console.log('Bot mode selected:', mode);
+  const chessRef = useRef(new Chess());
+  const engineRef = useRef(null);
 
-
-  /* ================= GAME CORE ================= */
-  const game = useRef(new Chess());
-
-  const playerColor = color === 'white' ? 'w' : 'b';
-  const botColor = playerColor === 'w' ? 'b' : 'w';
-
-  /* ================= STATE ================= */
-  const [positionMap, setPositionMap] = useState(
-    getPositionMap(game.current.fen())
-  );
+  const [positionMap, setPositionMap] = useState(getInitialPositionMap());
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [legalMoves, setLegalMoves] = useState([]);
   const [highlightSquares, setHighlightSquares] = useState(null);
-
   const [moveHistory, setMoveHistory] = useState([]);
-  const [moveIndex, setMoveIndex] = useState(-1);
-  const [rollbackIndex, setRollbackIndex] = useState(0);
 
-  const [activeColor, setActiveColor] = useState('w');
-  const [isBoardTouchable, setBoardTouchable] = useState(true);
+  const playerIsWhite = color === 'white';
+  const orientation = playerIsWhite ? 'white' : 'black';
 
-  /* ================= PLAYER ROW (FIXED POSITIONS) ================= */
-  // 🔒 Player ALWAYS bottom, Bot ALWAYS top
-  const topPlayerName = bot?.name;
-  const bottomPlayerName = 'You';
+  /* ---------------- INIT STOCKFISH ---------------- */
 
-  const topIcon =
-    color === 'white'
-      ? require('../../assets/bK.png') // bot = black
-      : require('../../assets/wK.png'); // bot = white
-
-  const bottomIcon =
-    color === 'white'
-      ? require('../../assets/wK.png') // you = white
-      : require('../../assets/bK.png'); // you = black
-
-  /* ================= BOT FIRST MOVE (IF PLAYER BLACK) ================= */
   useEffect(() => {
-    if (playerColor === 'b') {
-      setTimeout(makeBotMove, 600);
+    engineRef.current = Stockfish();
+    engineRef.current.postMessage('uci');
+
+    engineRef.current.onmessage = (event) => {
+      const msg = event.data || event;
+      if (msg.startsWith('bestmove')) {
+        const move = msg.split(' ')[1];
+        applyBotMove(move);
+      }
+    };
+
+    // bot plays first if user is black
+    if (!playerIsWhite) {
+      setTimeout(makeBotMove, 500);
     }
+
+    return () => {
+      engineRef.current = null;
+    };
   }, []);
 
-  /* ================= USER MOVE ================= */
-  const handleSquareClick = (square) => {
-    if (!isBoardTouchable || activeColor !== playerColor) return;
+  /* ---------------- HELPERS ---------------- */
 
-    if (!selectedSquare) {
-      const moves = game.current.moves({ square, verbose: true });
-      if (moves.length) {
-        setSelectedSquare(square);
-        setLegalMoves(moves);
-      }
-      return;
-    }
+  const updateBoard = () => {
+    const chess = chessRef.current;
+    const board = {};
 
-    const isLegal = legalMoves.some((m) => m.to === square);
-    if (!isLegal) {
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
+    chess.board().forEach((row, r) => {
+      row.forEach((piece, f) => {
+        if (piece) {
+          const square = 'abcdefgh'[f] + (8 - r);
+          board[square] =
+            piece.color === 'w'
+              ? piece.type.toUpperCase()
+              : piece.type;
+        }
+      });
+    });
 
-    const move = game.current.move({
-      from: selectedSquare,
-      to: square,
+    setPositionMap(board);
+    setMoveHistory(chess.history());
+  };
+
+  const isPlayersTurn = () => {
+    const chess = chessRef.current;
+    return (
+      (chess.turn() === 'w' && playerIsWhite) ||
+      (chess.turn() === 'b' && !playerIsWhite)
+    );
+  };
+
+  /* ---------------- BOT MOVE ---------------- */
+
+  const makeBotMove = () => {
+    const chess = chessRef.current;
+    if (chess.isGameOver()) return;
+
+    engineRef.current.postMessage(`position fen ${chess.fen()}`);
+    engineRef.current.postMessage(`go depth ${strength}`);
+  };
+
+  const applyBotMove = (uciMove) => {
+    if (!uciMove || uciMove === '(none)') return;
+
+    chessRef.current.move({
+      from: uciMove.slice(0, 2),
+      to: uciMove.slice(2, 4),
       promotion: 'q',
     });
 
-    if (move) {
-      afterMove(move);
-      setTimeout(makeBotMove, 600);
+    updateBoard();
+  };
+
+  /* ---------------- USER MOVE ---------------- */
+
+  const onSquarePress = (square) => {
+    const chess = chessRef.current;
+    if (!isPlayersTurn()) return;
+
+    if (selectedSquare) {
+      const move = chess.move({
+        from: selectedSquare,
+        to: square,
+        promotion: 'q',
+      });
+
+      setSelectedSquare(null);
+      setLegalMoves([]);
+      setHighlightSquares(null);
+
+      if (move) {
+        updateBoard();
+        setTimeout(makeBotMove, 400);
+      }
+    } else {
+      const moves = chess.moves({ square, verbose: true });
+      if (moves.length) {
+        setSelectedSquare(square);
+        setLegalMoves(moves);
+        setHighlightSquares({ from: square });
+      }
     }
   };
 
-  /* ================= AFTER MOVE ================= */
-  const afterMove = (move) => {
-    setSelectedSquare(null);
-    setLegalMoves([]);
-    setPositionMap(getPositionMap(game.current.fen()));
+  /* ---------------- UNDO ---------------- */
 
-    setMoveHistory((prev) => [...prev.slice(0, rollbackIndex), move.san]);
-    setMoveIndex(rollbackIndex);
-    setRollbackIndex(rollbackIndex + 1);
-
-    setActiveColor(game.current.turn());
-
-    setHighlightSquares({
-      from: move.from,
-      to: move.to,
-      capture: move.flags.includes('c') ? move.to : null,
-    });
+  const undoMove = () => {
+    chessRef.current.undo();
+    chessRef.current.undo();
+    updateBoard();
   };
 
-  /* ================= BOT MOVE (DUMMY) ================= */
-  const makeBotMove = () => {
-    if (game.current.turn() !== botColor) return;
+  /* ---------------- UI ---------------- */
 
-    const moves = game.current.moves({ verbose: true });
-    if (!moves.length) return;
-
-    const move = moves[Math.floor(Math.random() * moves.length)];
-    game.current.move(move);
-    afterMove(move);
-  };
-
-  /* ================= UI ================= */
   return (
     <View style={styles.container}>
-      {/* HEADER */}
-     <View style={styles.header}>
-  <View style={styles.headingRow}>
-    <Image
-      source={require('../../assets/Bot.png')}
-      style={styles.headingIcon}
-    />
-    <Text style={styles.modeLabel}>Play vs Bot</Text>
-  </View>
-        
-
-        <MoveHistoryPanel
-          moveHistory={moveHistory}
-          moveIndex={moveIndex}
-          setMoveIndex={setMoveIndex}
-          setRollbackIndex={setRollbackIndex}
-          setPositionMap={setPositionMap}
-          setActiveColor={setActiveColor}
-          game={game}
-          setHighlightSquares={setHighlightSquares}
-          getPositionMap={getPositionMap}
-        />
+      <View style={styles.header}>
+        <Text style={styles.modeLabel}>Play vs Bot</Text>
+        <Text style={styles.turnIndicator}>
+          {isPlayersTurn() ? 'Your move' : 'Bot thinking...'}
+        </Text>
       </View>
 
-      {/* BOARD + PLAYERS */}
-      <View style={styles.centerBlock}>
-        {/* TOP = BOT (FIXED) */}
-        <View style={styles.playerRow}>
-          <View style={styles.playerBlock}>
-            <Image source={topIcon} style={styles.playerIcon} />
-            <Text style={styles.playerLabel}>{topPlayerName}</Text>
-          </View>
-        </View>
+      <View style={styles.playerRow}>
+        <Image source={require('../../assets/bK.png')} style={styles.playerIcon} />
+        <Text style={styles.playerLabel}>Bot</Text>
+      </View>
 
-        {/* CHESSBOARD */}
+      <View style={styles.centerBlock}>
         <ChessBoard
           positionMap={positionMap}
           legalMoves={legalMoves}
           highlightSquares={highlightSquares}
-          onSquarePress={handleSquareClick}
-          orientation={color} // 🔥 ONLY board rotates
+          orientation={orientation}
+          onSquarePress={onSquarePress}
         />
+      </View>
 
-        {/* BOTTOM = YOU (FIXED) */}
-        <View style={styles.playerRow}>
-          <View style={styles.playerBlock}>
-            <Image source={bottomIcon} style={styles.playerIcon} />
-            <Text style={styles.playerLabel}>{bottomPlayerName}</Text>
-          </View>
-        </View>
+      <View style={styles.playerRow}>
+        <Image source={require('../../assets/wK.png')} style={styles.playerIcon} />
+        <Text style={styles.playerLabel}>You</Text>
+      </View>
 
-        {/* CONTROLS */}
-        <View style={styles.controlRow}>
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.controlText}>Exit</Text>
-          </TouchableOpacity>
+      <ScrollView horizontal style={styles.moveScroll}>
+        {moveHistory.map((m, i) => (
+          <Text key={i} style={styles.moveItem}>{m}</Text>
+        ))}
+      </ScrollView>
 
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => {
-              game.current.reset();
-              setPositionMap(getPositionMap(game.current.fen()));
-              setMoveHistory([]);
-              setMoveIndex(-1);
-              setRollbackIndex(0);
-              setActiveColor('w');
-            }}
-          >
-            <Text style={styles.controlText}>Restart</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.controlRow}>
+        <TouchableOpacity onPress={undoMove} style={styles.controlButton}>
+          <Text style={styles.controlText}>Undo</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.controlButton}>
+          <Text style={styles.controlText}>Exit</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
