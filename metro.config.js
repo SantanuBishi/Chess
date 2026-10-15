@@ -6,15 +6,24 @@ const config = {
   transformer: {
     babelTransformerPath: require.resolve('react-native-svg-transformer'),
   },
+
   resolver: {
+    // SVG ko asset ke roop mein load nahi karna
     assetExts: [
-      ...defaultConfig.resolver.assetExts,
-      'wasm',   // 🔥 IMPORTANT: allow JS as asset for WebView
-      'html', // 🔥 IMPORTANT
+      ...defaultConfig.resolver.assetExts.filter(
+        (ext) => ext !== 'svg'
+      ),
+      'wasm',
+      'html',
     ],
-    sourceExts: defaultConfig.resolver.sourceExts.filter(
-      ext => ext !== 'svg'
-    ).concat(['svg']),
+
+    // SVG ko React component ke roop mein transform karna
+    sourceExts: [
+      ...defaultConfig.resolver.sourceExts.filter(
+        (ext) => ext !== 'svg'
+      ),
+      'svg',
+    ],
   },
 };
 

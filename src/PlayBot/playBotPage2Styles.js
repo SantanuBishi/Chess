@@ -1,16 +1,12 @@
-import { StyleSheet, Dimensions } from 'react-native';
-
-const boardSize = Dimensions.get('window').width;
+import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#121212',
     paddingTop: 50,
-    paddingBottom: 80,
+    paddingBottom: 24,
   },
-
-  /* ================= HEADER ================= */
 
   header: {
     width: '100%',
@@ -29,12 +25,12 @@ export default StyleSheet.create({
     fontSize: 16,
     color: '#ccc',
     marginTop: 4,
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
 
-  /* ================= MOVE HISTORY ================= */
-
   moveScroll: {
-    marginTop: 40,
+    marginTop: 12,
     maxHeight: 30,
     width: '100%',
   },
@@ -48,25 +44,20 @@ export default StyleSheet.create({
     marginRight: 12,
     fontSize: 14,
     color: '#ccc',
-    backgroundColor: '#4b4a4aff',
-    padding: 4,
+    backgroundColor: '#4b4a4a',
+    padding: 2,
     borderRadius: 5,
   },
 
-  /* ================= BOARD ================= */
-
   centerBlock: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    right: 0,
-    transform: [{ translateY: -boardSize / 2 }],
-    zIndex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 12,
   },
 
-  /* ================= PLAYER ROW ================= */
-
   playerRow: {
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -77,6 +68,7 @@ export default StyleSheet.create({
   playerBlock: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 1,
   },
 
   playerIcon: {
@@ -86,12 +78,11 @@ export default StyleSheet.create({
   },
 
   playerLabel: {
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: '500',
     color: '#eee',
+    flexShrink: 1,
   },
-
-  /* ================= TIMER / CONTROLS ================= */
 
   timerControls: {
     flexDirection: 'row',
@@ -101,11 +92,12 @@ export default StyleSheet.create({
 
   controlButton: {
     backgroundColor: '#444',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
-    marginHorizontal: 8,
-    minWidth: 80,
+    marginHorizontal: 4,
+    marginVertical: 4,
+    minWidth: 72,
     alignItems: 'center',
   },
 
@@ -117,8 +109,9 @@ export default StyleSheet.create({
   controlRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 90,
+    marginTop: 22,
     flexWrap: 'wrap',
+    paddingHorizontal: 8,
   },
 
   inlineOptions: {
@@ -134,17 +127,4 @@ export default StyleSheet.create({
     borderRadius: 6,
     marginHorizontal: 6,
   },
-
-  headingRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 8,
-},
-
-headingIcon: {
-  width: 28,
-  height: 28,
-  resizeMode: 'contain',
-},
-
 });

@@ -19,7 +19,6 @@ export default StyleSheet.create({
   animatedPiece: {
     position: 'absolute',
     zIndex: 6,
-    transitionDuration: '200ms',
   },
   square: {
     position: 'absolute',

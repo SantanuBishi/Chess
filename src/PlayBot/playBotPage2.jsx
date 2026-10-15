@@ -6,37 +6,54 @@ import React, {
 } from 'react';
 
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
+  Alert,
   Image,
+  Platform,
+  Text,
+  ToastAndroid,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Chess } from 'chess.js';
 import { useStockfish } from '@udaychauhan/react-native-stockfish';
-
+import { TimerBlock, MoveHistoryPanel } from '../Features';
 import ChessBoard from '../Chessboard/Chessboard';
 import styles from './playBotPage2Styles';
 
-/* ---------------- INITIAL POSITION ---------------- */
+const getPositionMap = (fen) => {
+  const rows = fen.split(' ')[0].split('/');
+  const files = 'abcdefgh';
+  const position = {};
 
-const getInitialPositionMap = () => ({
-  a8: 'r', b8: 'n', c8: 'b', d8: 'q',
-  e8: 'k', f8: 'b', g8: 'n', h8: 'r',
+  rows.forEach((row, rowIndex) => {
+    let fileIndex = 0;
 
-  a7: 'p', b7: 'p', c7: 'p', d7: 'p',
-  e7: 'p', f7: 'p', g7: 'p', h7: 'p',
+    for (const char of row) {
+      if (/\d/.test(char)) {
+        fileIndex += Number(char);
+      } else {
+        position[`${files[fileIndex]}${8 - rowIndex}`] = char;
+        fileIndex += 1;
+      }
+    }
+  });
 
-  a2: 'P', b2: 'P', c2: 'P', d2: 'P',
-  e2: 'P', f2: 'P', g2: 'P', h2: 'P',
+  return position;
+};
 
-  a1: 'R', b1: 'N', c1: 'B', d1: 'Q',
-  e1: 'K', f1: 'B', g1: 'N', h1: 'R',
-});
+const getLastMoveHighlight = (chess) => {
+  const lastMove = chess.history({ verbose: true }).slice(-1)[0];
 
-/* ---------------- MAIN COMPONENT ---------------- */
+  if (!lastMove) return null;
+
+  return {
+    from: lastMove.from,
+    to: lastMove.to,
+    capture: lastMove.flags.includes('c') ? lastMove.to : null,
+  };
+};
 
 export default function PlayBotPage2() {
   const route = useRoute();
@@ -45,57 +62,89 @@ export default function PlayBotPage2() {
   const {
     strength = 8,
     color = 'white',
+    timeControl = 0,
+    startTimer = false,
   } = route.params || {};
 
+  const playerIsWhite = color === 'white';
+  const orientation = playerIsWhite ? 'white' : 'black';
+
+  // Live game and review game are kept separate.
   const chessRef = useRef(new Chess());
+  const reviewChessRef = useRef(new Chess());
 
   const engineReadyRef = useRef(false);
   const engineRunningRef = useRef(false);
   const botThinkingRef = useRef(false);
   const gameActiveRef = useRef(true);
-
-  const outputBufferRef = useRef('');
   const pendingBotMoveRef = useRef(false);
+  const outputBufferRef = useRef('');
+  const startupTimerRef = useRef(null);
   const makeBotMoveRef = useRef(null);
   const applyBotMoveRef = useRef(null);
+  const timeLogRef = useRef([{ w: timeControl, b: timeControl }]);
 
-  const [positionMap, setPositionMap] = useState(
-    getInitialPositionMap(),
+  const [positionMap, setPositionMap] = useState(() =>
+    getPositionMap(chessRef.current.fen()),
   );
 
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [legalMoves, setLegalMoves] = useState([]);
   const [highlightSquares, setHighlightSquares] = useState(null);
   const [moveHistory, setMoveHistory] = useState([]);
+  const [moveIndex, setMoveIndex] = useState(-1);
+  const [rollbackIndex, setRollbackIndex] = useState(0);
+  const [showOptions, setShowOptions] = useState(false);
+
+  const [whiteTime, setWhiteTime] = useState(timeControl);
+  const [blackTime, setBlackTime] = useState(timeControl);
+  const [activeColor, setActiveColor] = useState('w');
+  const [isRunning, setIsRunning] = useState(Boolean(startTimer));
+  const [isBoardTouchable, setBoardTouchable] = useState(true);
+
+  const [timeLog, setTimeLog] = useState([
+    { w: timeControl, b: timeControl },
+  ]);
+
   const [engineReady, setEngineReady] = useState(false);
   const [botThinking, setBotThinking] = useState(false);
   const [gameMessage, setGameMessage] = useState('');
 
-  const playerIsWhite = color === 'white';
-  const orientation = playerIsWhite ? 'white' : 'black';
+  const isPlayersTurn = useCallback(() => {
+    const turn = chessRef.current.turn();
 
-  /* ---------------- BOARD HELPERS ---------------- */
+    return (
+      (turn === 'w' && playerIsWhite) ||
+      (turn === 'b' && !playerIsWhite)
+    );
+  }, [playerIsWhite]);
+
+  /* ---------------- BOARD UPDATE ---------------- */
 
   const updateBoard = useCallback(() => {
     const chess = chessRef.current;
-    const board = {};
+    const history = chess.history();
 
-    chess.board().forEach((row, rowIndex) => {
-      row.forEach((piece, fileIndex) => {
-        if (piece) {
-          const square =
-            'abcdefgh'[fileIndex] + (8 - rowIndex);
+    const newTimeLog = timeLogRef.current.slice(
+      0,
+      history.length + 1,
+    );
 
-          board[square] =
-            piece.color === 'w'
-              ? piece.type.toUpperCase()
-              : piece.type;
-        }
-      });
-    });
+    timeLogRef.current = newTimeLog;
+    setTimeLog(newTimeLog);
 
-    setPositionMap(board);
-    setMoveHistory(chess.history());
+    setMoveHistory(history);
+    setMoveIndex(history.length - 1);
+    setRollbackIndex(history.length);
+
+    reviewChessRef.current = new Chess(chess.fen());
+
+    setPositionMap(getPositionMap(chess.fen()));
+    setActiveColor(chess.turn());
+    setHighlightSquares(getLastMoveHighlight(chess));
+
+    setSelectedSquare(null);
+    setLegalMoves([]);
 
     if (chess.isCheckmate()) {
       setGameMessage(
@@ -103,8 +152,13 @@ export default function PlayBotPage2() {
           ? 'Checkmate! Bot wins.'
           : 'Checkmate! You win!',
       );
+
+      setIsRunning(false);
+      setBoardTouchable(false);
     } else if (chess.isDraw()) {
       setGameMessage('Game drawn.');
+      setIsRunning(false);
+      setBoardTouchable(false);
     } else if (chess.isCheck()) {
       setGameMessage('Check!');
     } else {
@@ -112,80 +166,113 @@ export default function PlayBotPage2() {
     }
   }, [playerIsWhite]);
 
-  const isPlayersTurn = useCallback(() => {
-    const chess = chessRef.current;
+  /* ---------------- STOCKFISH ---------------- */
 
-    return (
-      (chess.turn() === 'w' && playerIsWhite) ||
-      (chess.turn() === 'b' && !playerIsWhite)
-    );
-  }, [playerIsWhite]);
+  const applyBotMove = useCallback(
+    (uciMove) => {
+      if (!gameActiveRef.current) return;
 
-  /* ---------------- STOCKFISH COMMANDS ---------------- */
+      const chess = chessRef.current;
+
+      try {
+        const move = chess.move({
+          from: uciMove.slice(0, 2),
+          to: uciMove.slice(2, 4),
+          promotion: uciMove[4] || 'q',
+        });
+
+        if (!move) {
+          console.warn(
+            'Stockfish returned an illegal move:',
+            uciMove,
+          );
+          return;
+        }
+
+        const historyLength = chess.history().length;
+        const snapshot = {
+          w: whiteTime,
+          b: blackTime,
+        };
+
+        timeLogRef.current = timeLogRef.current.slice(
+          0,
+          historyLength,
+        );
+
+        timeLogRef.current.push(snapshot);
+
+        updateBoard();
+      } catch (error) {
+        console.warn(
+          'Could not apply Stockfish move:',
+          error,
+        );
+      }
+    },
+    [updateBoard, whiteTime, blackTime],
+  );
+
+  applyBotMoveRef.current = applyBotMove;
 
   const {
     stockfishLoop,
     stopStockfish,
     sendCommandToStockfish,
   } = useStockfish({
-    onOutput: useCallback((output) => {
-      if (!gameActiveRef.current) {
-        return;
-      }
+    onOutput: useCallback(
+      (output) => {
+        if (!gameActiveRef.current) return;
 
-      outputBufferRef.current += String(output);
+        outputBufferRef.current += String(output);
 
-      const lines = outputBufferRef.current.split(/\r?\n/);
+        const lines =
+          outputBufferRef.current.split(/\r?\n/);
 
-      outputBufferRef.current = lines.pop() || '';
+        outputBufferRef.current = lines.pop() || '';
 
-      for (const rawLine of lines) {
-        const line = rawLine.trim();
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
 
-        if (!line) {
-          continue;
-        }
+          if (!line) continue;
 
-        if (line === 'uciok') {
-          sendCommandToStockfish('isready');
-          continue;
-        }
+          if (line === 'uciok') {
+            sendCommandToStockfish('isready');
+          } else if (line === 'readyok') {
+            engineReadyRef.current = true;
+            setEngineReady(true);
 
-        if (line === 'readyok') {
-          engineReadyRef.current = true;
-          setEngineReady(true);
+            if (!playerIsWhite) {
+              setTimeout(() => {
+                makeBotMoveRef.current?.();
+              }, 200);
+            }
+          } else if (line.startsWith('bestmove')) {
+            const move = line.split(/\s+/)[1];
 
-          if (!playerIsWhite) {
-            setTimeout(() => {
-              makeBotMoveRef.current?.();
-            }, 200);
+            pendingBotMoveRef.current = false;
+            botThinkingRef.current = false;
+            setBotThinking(false);
+
+            if (
+              move &&
+              move !== '(none)' &&
+              move !== '0000'
+            ) {
+              applyBotMoveRef.current?.(move);
+            }
           }
-
-          continue;
         }
-
-        if (line.startsWith('bestmove')) {
-          const move = line.split(/\s+/)[1];
-
-          pendingBotMoveRef.current = false;
-          botThinkingRef.current = false;
-          setBotThinking(false);
-
-          if (
-            move &&
-            move !== '(none)' &&
-            move !== '0000'
-          ) {
-            applyBotMoveRef.current?.(move);
-          }
-
-          continue;
-        }
-      }
-    }, [playerIsWhite, sendCommandToStockfish]),
+      },
+      [playerIsWhite, sendCommandToStockfish],
+    ),
 
     onError: useCallback((error) => {
       console.warn('Stockfish error:', error);
+
+      setGameMessage(
+        'Stockfish error. Please exit and reopen the game.',
+      );
     }, []),
   });
 
@@ -201,7 +288,7 @@ export default function PlayBotPage2() {
 
     stockfishLoop();
 
-    const startupTimer = setTimeout(() => {
+    startupTimerRef.current = setTimeout(() => {
       if (gameActiveRef.current) {
         sendCommandToStockfish('uci');
       }
@@ -211,7 +298,7 @@ export default function PlayBotPage2() {
       gameActiveRef.current = false;
       engineRunningRef.current = false;
 
-      clearTimeout(startupTimer);
+      clearTimeout(startupTimerRef.current);
       stopStockfish();
     };
   }, [
@@ -230,12 +317,9 @@ export default function PlayBotPage2() {
       !engineReadyRef.current ||
       !engineRunningRef.current ||
       pendingBotMoveRef.current ||
-      chess.isGameOver()
+      chess.isGameOver() ||
+      isPlayersTurn()
     ) {
-      return;
-    }
-
-    if (isPlayersTurn()) {
       return;
     }
 
@@ -243,14 +327,18 @@ export default function PlayBotPage2() {
     botThinkingRef.current = true;
     setBotThinking(true);
 
-    sendCommandToStockfish(`position fen ${chess.fen()}`);
+    sendCommandToStockfish(
+      `position fen ${chess.fen()}`,
+    );
 
     const safeStrength = Math.max(
       1,
       Math.min(20, Number(strength) || 8),
     );
 
-    sendCommandToStockfish(`go depth ${safeStrength}`);
+    sendCommandToStockfish(
+      `go depth ${safeStrength}`,
+    );
   }, [
     isPlayersTurn,
     sendCommandToStockfish,
@@ -259,186 +347,518 @@ export default function PlayBotPage2() {
 
   makeBotMoveRef.current = makeBotMove;
 
-  const applyBotMove = useCallback((uciMove) => {
-    if (!gameActiveRef.current) {
-      return;
+  /* ---------------- TIMER ---------------- */
+
+  useEffect(() => {
+    if (
+      !isRunning ||
+      timeControl <= 0 ||
+      !isBoardTouchable
+    ) {
+      return undefined;
     }
 
-    const chess = chessRef.current;
+    const interval = setInterval(() => {
+      if (activeColor === 'w') {
+        setWhiteTime((previous) => {
+          if (previous <= 1) {
+            setIsRunning(false);
+            setBoardTouchable(false);
 
-    try {
-      const move = chess.move({
-        from: uciMove.slice(0, 2),
-        to: uciMove.slice(2, 4),
-        promotion: uciMove[4] || 'q',
-      });
+            Alert.alert(
+              'Time out',
+              playerIsWhite
+                ? 'You lost on time.'
+                : 'Bot lost on time.',
+            );
 
-      if (!move) {
-        console.warn('Stockfish returned an illegal move:', uciMove);
+            return 0;
+          }
+
+          return previous - 1;
+        });
+      } else {
+        setBlackTime((previous) => {
+          if (previous <= 1) {
+            setIsRunning(false);
+            setBoardTouchable(false);
+
+            Alert.alert(
+              'Time out',
+              playerIsWhite
+                ? 'Bot lost on time.'
+                : 'You lost on time.',
+            );
+
+            return 0;
+          }
+
+          return previous - 1;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [
+    isRunning,
+    timeControl,
+    isBoardTouchable,
+    activeColor,
+    playerIsWhite,
+  ]);
+
+  /* ---------------- PLAYER MOVE ---------------- */
+
+  const onSquarePress = useCallback(
+    (square) => {
+      const chess = chessRef.current;
+
+      if (
+        !gameActiveRef.current ||
+        !engineReadyRef.current ||
+        !engineRunningRef.current ||
+        !isBoardTouchable ||
+        !isPlayersTurn() ||
+        botThinkingRef.current ||
+        chess.isGameOver()
+      ) {
+        if (
+          !isBoardTouchable &&
+          Platform.OS === 'android'
+        ) {
+          ToastAndroid.show(
+            'Press Start to continue.',
+            ToastAndroid.SHORT,
+          );
+        }
+
         return;
       }
 
-      updateBoard();
-    } catch (error) {
-      console.warn('Could not apply Stockfish move:', error);
-    }
-  }, [updateBoard]);
+      if (selectedSquare) {
+        let move = null;
 
-  applyBotMoveRef.current = applyBotMove;
-
-  /* ---------------- USER MOVE ---------------- */
-
-  const onSquarePress = useCallback((square) => {
-    const chess = chessRef.current;
-
-    if (
-      !gameActiveRef.current ||
-      !engineReadyRef.current ||
-      !isPlayersTurn() ||
-      botThinkingRef.current ||
-      chess.isGameOver()
-    ) {
-      return;
-    }
-
-    if (selectedSquare) {
-      let move = null;
-
-      try {
-        move = chess.move({
-          from: selectedSquare,
-          to: square,
-          promotion: 'q',
-        });
-      } catch {
-        move = null;
-      }
-
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      setHighlightSquares(null);
-
-      if (move) {
-        updateBoard();
-
-        setTimeout(() => {
-          makeBotMoveRef.current?.();
-        }, 200);
-      } else {
-        const moves = chess.moves({
-          square,
-          verbose: true,
-        });
-
-        if (moves.length) {
-          setSelectedSquare(square);
-          setLegalMoves(moves);
-          setHighlightSquares({ from: square });
+        try {
+          move = chess.move({
+            from: selectedSquare,
+            to: square,
+            promotion: 'q',
+          });
+        } catch {
+          move = null;
         }
+
+        setSelectedSquare(null);
+        setLegalMoves([]);
+
+        if (move) {
+          const historyLength = chess.history().length;
+
+          const snapshot = {
+            w: whiteTime,
+            b: blackTime,
+          };
+
+          timeLogRef.current =
+            timeLogRef.current.slice(
+              0,
+              historyLength,
+            );
+
+          timeLogRef.current.push(snapshot);
+
+          updateBoard();
+
+          setTimeout(() => {
+            makeBotMoveRef.current?.();
+          }, 200);
+        } else {
+          const possible = chess.moves({
+            square,
+            verbose: true,
+          });
+
+          if (possible.length) {
+            setSelectedSquare(square);
+            setLegalMoves(possible);
+            setHighlightSquares({ from: square });
+          } else {
+            setHighlightSquares(
+              getLastMoveHighlight(chess),
+            );
+          }
+        }
+
+        return;
+      }
+
+      const possible = chess.moves({
+        square,
+        verbose: true,
+      });
+
+      if (possible.length) {
+        setSelectedSquare(square);
+        setLegalMoves(possible);
+        setHighlightSquares({ from: square });
+      }
+    },
+    [
+      isBoardTouchable,
+      isPlayersTurn,
+      selectedSquare,
+      updateBoard,
+      whiteTime,
+      blackTime,
+    ],
+  );
+
+  /* ---------------- START / PAUSE ---------------- */
+
+  const pauseOrStart = useCallback(() => {
+    if (isRunning) {
+      setIsRunning(false);
+      setBoardTouchable(false);
+
+      if (
+        pendingBotMoveRef.current &&
+        engineReadyRef.current
+      ) {
+        sendCommandToStockfish('stop');
+
+        pendingBotMoveRef.current = false;
+        botThinkingRef.current = false;
+        setBotThinking(false);
       }
 
       return;
     }
 
-    const moves = chess.moves({
-      square,
-      verbose: true,
-    });
+    if (!engineReadyRef.current) {
+      Alert.alert(
+        'Please wait',
+        'Stockfish is still starting.',
+      );
 
-    if (moves.length) {
-      setSelectedSquare(square);
-      setLegalMoves(moves);
-      setHighlightSquares({ from: square });
-    }
-  }, [
-    isPlayersTurn,
-    selectedSquare,
-    updateBoard,
-  ]);
-
-  /* ---------------- UNDO ---------------- */
-
-  const undoMove = useCallback(() => {
-    const chess = chessRef.current;
-
-    if (!gameActiveRef.current) {
       return;
     }
 
-    // Stop any current engine search.
-    if (pendingBotMoveRef.current && engineReadyRef.current) {
-      sendCommandToStockfish('stop');
-      pendingBotMoveRef.current = false;
-      botThinkingRef.current = false;
-      setBotThinking(false);
+    if (chessRef.current.isGameOver()) {
+      Alert.alert(
+        'Game over',
+        'This game has already finished.',
+      );
+
+      return;
     }
 
-    // Undo the bot's move and the player's move.
-    if (chess.history().length > 0) {
-      chess.undo();
+    const liveHistoryLength =
+      chessRef.current.history().length;
+
+    if (moveIndex !== liveHistoryLength - 1) {
+      setMoveIndex(liveHistoryLength - 1);
+      setRollbackIndex(liveHistoryLength);
+
+      setPositionMap(
+        getPositionMap(chessRef.current.fen()),
+      );
+
+      setHighlightSquares(
+        getLastMoveHighlight(chessRef.current),
+      );
+
+      setActiveColor(chessRef.current.turn());
     }
 
-    if (chess.history().length > 0) {
-      chess.undo();
-    }
+    setBoardTouchable(true);
+    setIsRunning(true);
 
-    setSelectedSquare(null);
-    setLegalMoves([]);
-    setHighlightSquares(null);
-
-    updateBoard();
-
-    if (
-      engineReadyRef.current &&
-      !chess.isGameOver() &&
-      !isPlayersTurn()
-    ) {
+    if (!isPlayersTurn()) {
       setTimeout(() => {
         makeBotMoveRef.current?.();
       }, 200);
     }
   }, [
+    isRunning,
     isPlayersTurn,
+    moveIndex,
     sendCommandToStockfish,
-    updateBoard,
   ]);
 
-  /* ---------------- EXIT ---------------- */
+  /* ---------------- UNDO ---------------- */
+
+  const undoMove = useCallback(() => {
+    if (!gameActiveRef.current) return;
+
+    if (
+      pendingBotMoveRef.current &&
+      engineReadyRef.current
+    ) {
+      sendCommandToStockfish('stop');
+
+      pendingBotMoveRef.current = false;
+      botThinkingRef.current = false;
+      setBotThinking(false);
+    }
+
+    const chess = chessRef.current;
+
+    if (chess.history().length === 0) return;
+
+    chess.undo();
+
+    if (
+      chess.history().length > 0 &&
+      isPlayersTurn()
+    ) {
+      chess.undo();
+    }
+
+    const history = chess.history();
+
+    timeLogRef.current =
+      timeLogRef.current.slice(
+        0,
+        history.length + 1,
+      );
+
+    setTimeLog(timeLogRef.current);
+
+    reviewChessRef.current = new Chess(chess.fen());
+
+    setMoveHistory(history);
+    setMoveIndex(history.length - 1);
+    setRollbackIndex(history.length);
+
+    setPositionMap(
+      getPositionMap(chess.fen()),
+    );
+
+    setActiveColor(chess.turn());
+
+    setHighlightSquares(
+      getLastMoveHighlight(chess),
+    );
+
+    setSelectedSquare(null);
+    setLegalMoves([]);
+    setGameMessage('');
+
+    setIsRunning(false);
+    setBoardTouchable(false);
+  }, [
+    isPlayersTurn,
+    sendCommandToStockfish,
+  ]);
+
+  /* ---------------- MOVE HISTORY NAVIGATION ---------------- */
+
+  const browseTo = useCallback((index) => {
+    const history = chessRef.current.history();
+
+    const clampedIndex = Math.max(
+      -1,
+      Math.min(index, history.length - 1),
+    );
+
+    const review = new Chess();
+
+    for (let i = 0; i <= clampedIndex; i += 1) {
+      try {
+        review.move(history[i]);
+      } catch (error) {
+        console.warn(
+          'Could not review move:',
+          history[i],
+          error,
+        );
+
+        break;
+      }
+    }
+
+    reviewChessRef.current = review;
+
+    setPositionMap(
+      getPositionMap(review.fen()),
+    );
+
+    setActiveColor(review.turn());
+
+    setHighlightSquares(
+      getLastMoveHighlight(review),
+    );
+
+    setMoveIndex(clampedIndex);
+    setRollbackIndex(clampedIndex + 1);
+
+    setSelectedSquare(null);
+    setLegalMoves([]);
+
+    setIsRunning(false);
+    setBoardTouchable(false);
+
+    const snapshot =
+      timeLogRef.current[clampedIndex + 1];
+
+    if (snapshot) {
+      setWhiteTime(snapshot.w);
+      setBlackTime(snapshot.b);
+    }
+  }, []);
+
+  const goBack = useCallback(() => {
+    if (moveIndex >= 0) {
+      browseTo(moveIndex - 1);
+    }
+  }, [browseTo, moveIndex]);
+
+  const goForward = useCallback(() => {
+    const maxIndex =
+      chessRef.current.history().length - 1;
+
+    if (moveIndex < maxIndex) {
+      browseTo(moveIndex + 1);
+    }
+  }, [browseTo, moveIndex]);
+
+  /* ---------------- OPTIONS ---------------- */
+
+  const offerDraw = useCallback(() => {
+    Alert.alert(
+      'Offer Draw',
+      'Send a draw offer?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Offer',
+          onPress: () => {
+            Alert.alert(
+              'Draw',
+              'Draw offer noted. Stockfish does not negotiate draw offers.',
+            );
+          },
+        },
+      ],
+    );
+  }, []);
+
+  const resign = useCallback(() => {
+    Alert.alert(
+      'Resign',
+      'Are you sure you want to resign?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Resign',
+          style: 'destructive',
+          onPress: () => {
+            setIsRunning(false);
+            setBoardTouchable(false);
+            gameActiveRef.current = false;
+
+            Alert.alert(
+              'You resigned',
+              'Bot wins.',
+            );
+          },
+        },
+      ],
+    );
+  }, []);
 
   const exitGame = useCallback(() => {
-    gameActiveRef.current = false;
-    navigation.goBack();
+    Alert.alert(
+      'Exit game',
+      'Leave this game?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Exit',
+          style: 'destructive',
+          onPress: () => {
+            gameActiveRef.current = false;
+            navigation.goBack();
+          },
+        },
+      ],
+    );
   }, [navigation]);
 
   /* ---------------- UI ---------------- */
 
+  const statusText = !engineReady
+    ? 'Starting Stockfish...'
+    : gameMessage ||
+      (botThinking
+        ? 'Bot thinking...'
+        : isPlayersTurn()
+          ? 'Your move'
+          : 'Bot to move');
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.modeLabel}>Play vs Bot</Text>
+        <Text style={styles.modeLabel}>
+          🤖 Play vs Bot
+        </Text>
 
         <Text style={styles.turnIndicator}>
-          {!engineReady
-            ? 'Starting Stockfish...'
-            : gameMessage ||
-              (botThinking
-                ? 'Bot thinking...'
-                : isPlayersTurn()
-                  ? 'Your move'
-                  : 'Bot thinking...')}
+          {statusText}
         </Text>
-      </View>
 
-      <View style={styles.playerRow}>
-        <Image
-          source={require('../../assets/bK.png')}
-          style={styles.playerIcon}
+        <MoveHistoryPanel
+          moveHistory={moveHistory}
+          moveIndex={moveIndex}
+          setMoveIndex={browseTo}
+          setRollbackIndex={setRollbackIndex}
+          setPositionMap={setPositionMap}
+          setActiveColor={setActiveColor}
+          getPositionMap={getPositionMap}
+          game={chessRef}
+          setHighlightSquares={setHighlightSquares}
         />
-
-        <Text style={styles.playerLabel}>Bot (Stockfish)</Text>
       </View>
 
       <View style={styles.centerBlock}>
+        {/* Bot player row */}
+        <View style={styles.playerRow}>
+          <View style={styles.playerBlock}>
+            <Image
+              source={require('../../assets/bK.png')}
+              style={styles.playerIcon}
+            />
+
+            <Text style={styles.playerLabel}>
+              Bot (Stockfish)
+            </Text>
+          </View>
+
+          {timeControl > 0 && (
+            <TimerBlock
+              mode={playerIsWhite ? 'b' : 'w'}
+              activeColor={activeColor}
+              whiteTime={whiteTime}
+              blackTime={blackTime}
+              isRunning={
+                isRunning &&
+                activeColor ===
+                  (playerIsWhite ? 'b' : 'w')
+              }
+              timeControl={timeControl}
+            />
+          )}
+        </View>
+
         <ChessBoard
           positionMap={positionMap}
           legalMoves={legalMoves}
@@ -446,43 +866,117 @@ export default function PlayBotPage2() {
           orientation={orientation}
           onSquarePress={onSquarePress}
         />
-      </View>
 
-      <View style={styles.playerRow}>
-        <Image
-          source={require('../../assets/wK.png')}
-          style={styles.playerIcon}
-        />
+        {/* Human player row */}
+        <View style={styles.playerRow}>
+          <View style={styles.playerBlock}>
+            <Image
+              source={require('../../assets/wK.png')}
+              style={styles.playerIcon}
+            />
 
-        <Text style={styles.playerLabel}>You</Text>
-      </View>
+            <Text style={styles.playerLabel}>
+              You
+            </Text>
+          </View>
 
-      <ScrollView
-        horizontal
-        style={styles.moveScroll}
-        contentContainerStyle={{ alignItems: 'center' }}
-      >
-        {moveHistory.map((move, index) => (
-          <Text key={`${index}-${move}`} style={styles.moveItem}>
-            {move}
-          </Text>
-        ))}
-      </ScrollView>
+          {timeControl > 0 && (
+            <TimerBlock
+              mode={playerIsWhite ? 'w' : 'b'}
+              activeColor={activeColor}
+              whiteTime={whiteTime}
+              blackTime={blackTime}
+              isRunning={
+                isRunning &&
+                activeColor ===
+                  (playerIsWhite ? 'w' : 'b')
+              }
+              timeControl={timeControl}
+            />
+          )}
+        </View>
 
-      <View style={styles.controlRow}>
-        <TouchableOpacity
-          onPress={undoMove}
-          style={styles.controlButton}
-        >
-          <Text style={styles.controlText}>Undo</Text>
-        </TouchableOpacity>
+        {/* Main controls */}
+        <View style={styles.controlRow}>
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={() =>
+              setShowOptions((previous) => !previous)
+            }
+          >
+            <Text style={styles.controlText}>
+              Options
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={exitGame}
-          style={styles.controlButton}
-        >
-          <Text style={styles.controlText}>Exit</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={pauseOrStart}
+          >
+            <Text style={styles.controlText}>
+              {isRunning ? 'Pause' : 'Start'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={goBack}
+          >
+            <Text style={styles.controlText}>
+              Back
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={goForward}
+          >
+            <Text style={styles.controlText}>
+              Forward
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={undoMove}
+          >
+            <Text style={styles.controlText}>
+              Undo
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.controlButton}
+            onPress={exitGame}
+          >
+            <Text style={styles.controlText}>
+              Exit
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Options panel */}
+        {showOptions && (
+          <View style={styles.inlineOptions}>
+            <TouchableOpacity
+              style={styles.optionItem}
+              onPress={offerDraw}
+            >
+              <Text style={styles.controlText}>
+                Draw
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.optionItem}
+              onPress={resign}
+            >
+              <Text style={styles.controlText}>
+                Resign
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );

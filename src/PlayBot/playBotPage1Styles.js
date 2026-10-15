@@ -19,9 +19,10 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#FFFFFF',
   },
 
+  // Bot preview
   botPreview: {
     backgroundColor: '#1E1E1E',
     padding: 10,
@@ -35,6 +36,7 @@ const styles = StyleSheet.create({
   },
 
   infoRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
@@ -75,8 +77,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
+  // Bot selection
   scrollArea: {
     flex: 1,
+  },
+
+  scrollContent: {
+    paddingBottom: 12,
   },
 
   categoryBlock: {
@@ -86,32 +93,36 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontWeight: 'bold',
     marginBottom: 4,
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 20,
   },
 
   botRow: {
   flexDirection: 'row',
   flexWrap: 'wrap',
-  justifyContent: 'space-between',
+  justifyContent: 'flex-start',
+  alignItems: 'flex-start',
 },
-
 
   botCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 9,
-    marginTop: 20,
-  },
-
-  selectedBotCard: {
+  width: '22%',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginHorizontal: '1.5%',
+  marginTop: 16,
+  paddingVertical: 6,
   borderWidth: 2,
-  borderColor: '#81b64c',
+  borderColor: 'transparent',
   borderRadius: 10,
-  backgroundColor: '#1f2a18',
-  transform: [{ scale: 1.05 }],
 },
 
+  selectedBotCard: {
+    borderWidth: 2,
+    borderColor: '#81B64C',
+    borderRadius: 10,
+    backgroundColor: '#1F2A18',
+    transform: [{ scale: 1.05 }],
+  },
 
   botThumb: {
     width: 64,
@@ -121,134 +132,197 @@ const styles = StyleSheet.create({
 
   botName: {
     fontSize: 16,
-    color: '#fff',
+    color: '#FFFFFF',
+    marginTop: 3,
   },
 
+  // Configuration panel
   configPanel: {
-  padding: 16,
-  backgroundColor: '#1a1a1a',
-  borderRadius: 14,
-  marginTop: 16,
-  borderWidth: 1,
-  borderColor: '#2a2a2a',
-},
-
-
-  configTitle: {
-    fontWeight: 'bold',
-    marginBottom: 6,
-    color: '#fff',
-    fontSize: 16,
+    padding: 16,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 14,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
 
-  modeColorRow: {
+  // Settings and colours side-by-side
+  settingsColorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+
+  settingsHeader: {
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'space-between',
-  marginVertical: 12,
-},
-
-
-dropdownWrapper: {
-  flex: 1,
-  marginRight: 12,
-  zIndex: 1000,
-},
-
-
-dropdown: {
-  backgroundColor: '#2a2a2a',
-  borderColor: '#444',
-  height: 52,
+  alignSelf: 'flex-start',
+  minHeight: 50,
+  paddingVertical: 8,
+  paddingHorizontal: 10,
+  backgroundColor: '#2A2A2A',
+  borderWidth: 1,
+  borderColor: '#444444',
   borderRadius: 10,
-  paddingHorizontal: 14,
 },
 
-dropdownText: {
-  color: '#fff',
-  fontSize: 15,
+settingsHeaderText: {
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  marginRight: 8,
 },
 
-dropdownLabel: {
-  color: '#fff',
-  fontWeight: '600',
-},
-
-dropdownItemText: {
-  color: '#fff',
-  fontSize: 14,
-},
-
-colorSelectorInline: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'flex-end',
-  flexWrap: 'nowrap',
-  flexShrink: 1,
-},
-
-
-  dropdownContainer: {
-    backgroundColor: '#2a2a2a',
-    borderColor: '#444',
-    maxHeight: 200,
-    zIndex: 999,
-    elevation: 3,
+  configTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 
-  colorButton: {
-    marginHorizontal: 8,
+  settingsSubtitle: {
+    color: '#AAAAAA',
+    fontSize: 10,
+    marginTop: 4,
   },
 
-  selectedColor: {
-    borderWidth: 3,
-    borderColor: '#81b64c',
-    borderRadius: 7,
+  expandIcon: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    marginLeft: 4,
   },
 
-  colorIcon: {
-    width: 32,
-    height: 32,
+  // Expanded settings
+  settingsContent: {
+    marginTop: 0,
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: '#202020',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
 
-  customPanel: {
-    marginTop: 12,
-    color:'#fffffff',
+  sectionTitle: {
+    color: '#AAAAAA',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginBottom: 10,
   },
 
-  toggleRow: {
+  // Time control
+  timeOptionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 5,
+    marginBottom: 20,
+  },
+
+  timeTile: {
+    flex: 1,
+    minHeight: 62,
+    marginHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2A2A2A',
+    borderWidth: 2,
+    borderColor: '#3A3A3A',
+    borderRadius: 9,
+  },
+
+  selectedTimeTile: {
+    backgroundColor: '#1F2A18',
+    borderColor: '#81B64C',
+  },
+
+  timeNumber: {
+    color: '#FFFFFF',
+    fontSize: 21,
+    fontWeight: 'bold',
+  },
+
+  timeLabel: {
+    color: '#AAAAAA',
+    fontSize: 11,
+    marginTop: 2,
+  },
+
+  selectedTimeText: {
+    color: '#FFFFFF',
+  },
+
+  // Game options
+  optionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+
+  optionRow: {
+    width: '48%',
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
 
   toggleLabel: {
-  color: '#ffffff',
-  fontSize: 15,
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 13,
+    marginRight: 4,
+  },
+
+  // Colour selection
+  colorSelectorInline: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  flexShrink: 0,
+  marginLeft: 6,
+  gap: 15,
+},  
+
+  colorButton: {
+  width: 49,
+  height: 49,
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderWidth: 2,
+  borderColor: 'transparent',
+  borderRadius: 5,
 },
 
+selectedColor: {
+  borderColor: '#81B64C',
+  backgroundColor: '#1F2A18',
+},
 
-  sliderBlock: {
-    marginVertical: 12,
+  colorIcon: {
+    width: 43,
+    height: 43,
+    resizeMode: 'contain',
   },
 
-  configBottom: {
-    marginTop: 16,
-  },
-
+  // Play button
   playButton: {
-    backgroundColor: '#81b64c',
+    backgroundColor: '#81B64C',
     width: '100%',
+    minHeight: 48,
     padding: 14,
     borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   disabledButton: {
-    backgroundColor: '#aaa',
+    backgroundColor: '#555555',
+    opacity: 0.7,
   },
 
   playText: {
-    color: '#fff',
+    color: '#FFFFFF',
     textAlign: 'center',
     fontWeight: 'bold',
     fontSize: 16,
