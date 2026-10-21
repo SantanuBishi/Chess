@@ -64,6 +64,7 @@ export default function PlayBotPage2() {
     color = 'white',
     timeControl = 0,
     startTimer = false,
+    bot,
   } = route.params || {};
 
   const playerIsWhite = color === 'white';
@@ -830,35 +831,18 @@ export default function PlayBotPage2() {
       </View>
 
       <View style={styles.centerBlock}>
-        {/* Bot player row */}
-        <View style={styles.playerRow}>
-          <View style={styles.playerBlock}>
-            <Image
-              source={require('../../assets/bK.png')}
-              style={styles.playerIcon}
-            />
-
-            <Text style={styles.playerLabel}>
-              Bot (Stockfish)
-            </Text>
-          </View>
-
-          {timeControl > 0 && (
-            <TimerBlock
-              mode={playerIsWhite ? 'b' : 'w'}
-              activeColor={activeColor}
-              whiteTime={whiteTime}
-              blackTime={blackTime}
-              isRunning={
-                isRunning &&
-                activeColor ===
-                  (playerIsWhite ? 'b' : 'w')
-              }
-              timeControl={timeControl}
-            />
-          )}
+        {/* Selected bot avatar only - no bot name */}
+        <View style={styles.botAvatarContainer}>
+          <Image
+            source={bot?.avatar || require('../../assets/bK.png')}
+            style={{
+              width: 56,
+              height: 56,
+              resizeMode: 'contain',
+            }}
+          />
         </View>
-
+        {/* Chessboard */}
         <ChessBoard
           positionMap={positionMap}
           legalMoves={legalMoves}
@@ -867,34 +851,37 @@ export default function PlayBotPage2() {
           onSquarePress={onSquarePress}
         />
 
-        {/* Human player row */}
-        <View style={styles.playerRow}>
-          <View style={styles.playerBlock}>
-            <Image
-              source={require('../../assets/wK.png')}
-              style={styles.playerIcon}
-            />
+        {/* White timer always left, Black timer always right */}
+        {timeControl > 0 && (
+          <View style={styles.timerRow}>
+  <View style={styles.whiteTimerColumn}>
+              <TimerBlock
+                mode="w"
+                activeColor={activeColor}
+                whiteTime={whiteTime}
+                blackTime={blackTime}
+                isRunning={
+                  isRunning && activeColor === 'w'
+                }
+                timeControl={timeControl}
+              />
+            </View>
 
-            <Text style={styles.playerLabel}>
-              You
-            </Text>
+            <View style={styles.blackTimerColumn}>
+              <TimerBlock
+                mode="b"
+                activeColor={activeColor}
+                whiteTime={whiteTime}
+                blackTime={blackTime}
+                isRunning={
+                  isRunning && activeColor === 'b'
+                }
+                timeControl={timeControl}
+              />
+            </View>
           </View>
-
-          {timeControl > 0 && (
-            <TimerBlock
-              mode={playerIsWhite ? 'w' : 'b'}
-              activeColor={activeColor}
-              whiteTime={whiteTime}
-              blackTime={blackTime}
-              isRunning={
-                isRunning &&
-                activeColor ===
-                  (playerIsWhite ? 'w' : 'b')
-              }
-              timeControl={timeControl}
-            />
-          )}
-        </View>
+        )}
+      </View>
 
         {/* Main controls */}
         <View style={styles.controlRow}>
@@ -978,6 +965,5 @@ export default function PlayBotPage2() {
           </View>
         )}
       </View>
-    </View>
   );
 }

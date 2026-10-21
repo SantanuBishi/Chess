@@ -1,130 +1,136 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121212',
-    paddingTop: 50,
-    paddingBottom: 24,
-  },
+container: {
+flex: 1,
+backgroundColor: '#121212',
+paddingTop: 50,
+paddingBottom: 24,
+},
 
-  header: {
-    width: '100%',
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+header: {
+width: '100%',
+paddingVertical: 12,
+alignItems: 'center',
+justifyContent: 'center',
+},
 
-  modeLabel: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-  },
+modeLabel: {
+fontSize: 20,
+fontWeight: '700',
+color: '#fff',
+},
 
-  turnIndicator: {
-    fontSize: 16,
-    color: '#ccc',
-    marginTop: 4,
-    textAlign: 'center',
-    paddingHorizontal: 12,
-  },
+turnIndicator: {
+fontSize: 16,
+color: '#ccc',
+marginTop: 4,
+textAlign: 'center',
+paddingHorizontal: 12,
+},
 
-  moveScroll: {
-    marginTop: 12,
-    maxHeight: 30,
-    width: '100%',
-  },
+moveScroll: {
+marginTop: 12,
+maxHeight: 30,
+width: '100%',
+},
 
-  moveScrollContent: {
-    paddingHorizontal: 12,
-    alignItems: 'center',
-  },
+moveScrollContent: {
+paddingHorizontal: 12,
+alignItems: 'center',
+},
 
-  moveItem: {
-    marginRight: 12,
-    fontSize: 14,
-    color: '#ccc',
-    backgroundColor: '#4b4a4a',
-    padding: 2,
-    borderRadius: 5,
-  },
+moveItem: {
+marginRight: 12,
+fontSize: 14,
+color: '#ccc',
+backgroundColor: '#4b4a4a',
+padding: 2,
+borderRadius: 5,
+},
 
-  centerBlock: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 12,
-  },
+centerBlock: {
+width: '100%',
+alignItems: 'flex-start',
+justifyContent: 'center',
+marginVertical: 50
+},
 
-  playerRow: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginVertical: 4,
-  },
+// Bot avatar aligned to the left
+botAvatarContainer: {
+width: '100%',
+alignItems: 'flex-start',
+paddingHorizontal: 15,
+marginBottom: 10,
+},
 
-  playerBlock: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 1,
-  },
+botAvatar: {
+width: 56,
+height: 56,
+resizeMode: 'contain',
+},
 
-  playerIcon: {
-    width: 40,
-    height: 40,
-    marginRight: 6,
-  },
+// Timers placed near opposite screen edges with comfortable margins
+timerRow: {
+width: '100%',
+flexDirection: 'row',
+justifyContent: 'space-Between',
+alignItems: 'center',
+marginTop: 8,
+marginBottom: 8,
+paddingHorizontal: 24,
+},
 
-  playerLabel: {
-    fontSize: 22,
-    fontWeight: '500',
-    color: '#eee',
-    flexShrink: 1,
-  },
+whiteTimerColumn: {
+alignItems: 'flex-start',
+},
 
-  timerControls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
+blackTimerColumn: {
+alignItems: 'flex-end',
+marginLeft: 'auto',
+},
 
-  controlButton: {
-    backgroundColor: '#444',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginHorizontal: 4,
-    marginVertical: 4,
-    minWidth: 72,
-    alignItems: 'center',
-  },
 
-  controlText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
+timerControls: {
+flexDirection: 'row',
+justifyContent: 'space-between',
+marginTop: 12,
+},
 
-  controlRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 22,
-    flexWrap: 'wrap',
-    paddingHorizontal: 8,
-  },
+controlButton: {
+backgroundColor: '#444',
+paddingHorizontal: 12,
+paddingVertical: 8,
+borderRadius: 6,
+marginHorizontal: 6,
+marginVertical: 6,
+minWidth: 72,
+alignItems: 'center',
+},
 
-  inlineOptions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
+controlText: {
+color: '#fff',
+fontWeight: '600',
+},
 
-  optionItem: {
-    backgroundColor: '#333',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginHorizontal: 6,
-  },
+controlRow: {
+flexDirection: 'row',
+justifyContent: 'center',
+flexWrap: 'wrap',
+paddingHorizontal: 8,
+},
+
+inlineOptions: {
+flexDirection: 'row',
+justifyContent: 'center',
+marginTop: 8,
+},
+
+optionItem: {
+backgroundColor: '#333',
+paddingHorizontal: 12,
+paddingVertical: 6,
+borderRadius: 6,
+marginHorizontal: 6,
+},
 });
