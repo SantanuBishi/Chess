@@ -43,7 +43,7 @@ export default function MoveHistoryPanel({
     const tempGame = new Chess();
     let lastMove = null;
 
-    for (let i = 0; i < index; i++) {
+    for (let i = 0; i <= index; i++) {
       const move = tempGame.move(moveHistory[i]);
       if (!move) {
         console.warn('Invalid move at index', i, moveHistory[i]);
@@ -119,10 +119,13 @@ export default function MoveHistoryPanel({
 
 const styles = StyleSheet.create({
   moveScroll: {
-    marginTop: 40,
-    maxHeight: 30,
-    width: '100%',
-  },
+  marginTop: 15,
+  height: 30,
+  maxHeight: 30,
+  width: '100%',
+  flexGrow: 0,
+  flexShrink: 0,
+},
   moveScrollContent: {
     paddingHorizontal: 12,
     alignItems: 'center',
