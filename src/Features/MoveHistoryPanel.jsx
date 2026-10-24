@@ -43,7 +43,7 @@ export default function MoveHistoryPanel({
     const tempGame = new Chess();
     let lastMove = null;
 
-    for (let i = 0; i < index; i++) {
+    for (let i = 0; i <= index; i++) {
       const move = tempGame.move(moveHistory[i]);
       if (!move) {
         console.warn('Invalid move at index', i, moveHistory[i]);
