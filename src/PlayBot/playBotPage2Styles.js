@@ -10,7 +10,6 @@ paddingBottom: 24,
 
 header: {
 width: '100%',
-paddingVertical: 12,
 alignItems: 'center',
 justifyContent: 'center',
 },
@@ -50,18 +49,17 @@ borderRadius: 5,
 },
 
 centerBlock: {
-width: '100%',
-alignItems: 'flex-start',
-justifyContent: 'center',
-marginVertical: 50
+  width: '100%',
+  alignItems: 'flex-start',
+  justifyContent: 'center',
+  marginVertical: 12,
 },
 
-// Bot avatar aligned to the left
 botAvatarContainer: {
-width: '100%',
-alignItems: 'flex-start',
-paddingHorizontal: 15,
-marginBottom: 10,
+  width: '100%',
+  alignItems: 'flex-start',
+  paddingHorizontal: 15,
+  marginBottom: 4,
 },
 
 botAvatar: {
@@ -117,7 +115,7 @@ controlRow: {
 flexDirection: 'row',
 justifyContent: 'center',
 flexWrap: 'wrap',
-paddingHorizontal: 8,
+paddingHorizontal: 1,
 },
 
 inlineOptions: {
